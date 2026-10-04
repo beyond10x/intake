@@ -11,10 +11,11 @@
 //!   merges, pushes or deploys.
 //! - [`verifier`] is the only part that submits evidence, and only from the exit status of the test
 //!   command the executor ran (Atlas ADR 0074). Nothing a model says becomes evidence.
-//!
-//! The loop that drives them is not built yet.
+//! - [`run`] is the loop that drives them: references, classification, the case, then frontier,
+//!   Loom, executor, verifier and completion until the run stops for a stated reason.
 
 pub mod case;
 pub mod executor;
+pub mod run;
 pub mod selector;
 pub mod verifier;

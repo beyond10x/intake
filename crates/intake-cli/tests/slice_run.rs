@@ -264,6 +264,76 @@ fn the_run_command_lists_its_flags() {
     );
 }
 
+/// The exit status says how the run ended, and `run --help` states it: 0 when the run stops for
+/// approval (the slice reached its human gate), 3 for every other stop reason, 1 for a failure and
+/// 2 for a command line that is not valid. Which stop reason maps to 0 or 3 is pinned by the
+/// binary's unit test; a stop reason needs a model, which no test here reaches. A failure is driven
+/// here with no Codex login (`HOME` and `CODEX_HOME` an empty directory), so no login is read.
+#[test]
+fn the_exit_status_says_how_the_run_ended() {
+    let output = Command::new(env!("CARGO_BIN_EXE_b10x-intake"))
+        .args(["run", "--help"])
+        .output()
+        .expect("run b10x-intake");
+    let help = String::from_utf8(output.stdout).expect("help is UTF-8");
+    let status_line = |code: &str| -> String {
+        help.lines()
+            .map(str::trim)
+            .find(|line| line.starts_with(&format!("{code} ")))
+            .unwrap_or_else(|| panic!("`run --help` states exit status {code}: {help}"))
+            .to_owned()
+    };
+    assert!(help.contains("Exit status:"), "{help}");
+    assert!(status_line("0").contains("ApprovalRequired"), "{help}");
+    let other = status_line("3");
+    for reason in [
+        "NothingAdmissible",
+        "StepBudget",
+        "NoLocalExecutor",
+        "Refused",
+    ] {
+        assert!(other.contains(reason), "3 covers {reason}: {help}");
+    }
+    status_line("1");
+    status_line("2");
+
+    let fixture = Fixture::new("exit-status");
+    let home = fixture.root.join("home");
+    std::fs::create_dir_all(&home).expect("create an empty home");
+    let failed = Command::new(env!("CARGO_BIN_EXE_b10x-intake"))
+        .arg("run")
+        .arg("--workspace")
+        .arg(fixture.workspace())
+        .arg(INTENT)
+        .env("HOME", &home)
+        .env("CODEX_HOME", &home)
+        .output()
+        .expect("run b10x-intake");
+    let stderr = String::from_utf8_lossy(&failed.stderr);
+    assert_eq!(
+        failed.status.code(),
+        Some(1),
+        "no login is a failure: {stderr}"
+    );
+    assert!(
+        stderr.contains("codex"),
+        "the failure says to log in: {stderr}"
+    );
+
+    let usage = Command::new(env!("CARGO_BIN_EXE_b10x-intake"))
+        .args(["run", INTENT])
+        .env("HOME", &home)
+        .env("CODEX_HOME", &home)
+        .output()
+        .expect("run b10x-intake");
+    assert_eq!(
+        usage.status.code(),
+        Some(2),
+        "a missing --workspace is a usage error: {}",
+        String::from_utf8_lossy(&usage.stderr)
+    );
+}
+
 /// Runs the slice for `row` on `fixture`; returns the run, its output and the frontiers issued.
 fn drive(fixture: &Fixture, row: Row) -> (intake_slice::run::SliceRun, String, usize) {
     let classifier = Recorded::new("recorded-classifier", vec![row.pick]);
