@@ -138,6 +138,16 @@ dependencies = [
 [[package]]
 name = "b10x-intake-cli"
 version = "0.0.0"
+dependencies = [
+ "b10x-commission",
+ "b10x-governor",
+ "b10x-intake-model",
+ "b10x-intake-references",
+ "b10x-intake-slice",
+ "b10x-llm-core",
+ "clap",
+ "serde_json",
+]
 
 [[package]]
 name = "b10x-intake-model"
@@ -178,6 +188,7 @@ dependencies = [
  "b10x-els",
  "b10x-governor",
  "b10x-intake-references",
+ "b10x-intake-router",
  "b10x-llm-core",
  "b10x-loom",
  "serde_json",

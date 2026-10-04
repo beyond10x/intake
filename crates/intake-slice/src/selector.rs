@@ -10,7 +10,8 @@
 //!   ([`crate::executor::arguments_schema`]), and returns the call's arguments as they are.
 //!
 //! Both are told the [`Briefing`]: the intent, its extracted references and the transcript so far,
-//! which the caller extends with [`Briefing::record`] after each performed action. Whatever else the
+//! which the caller extends with [`Briefing::record`] after each performed action and with
+//! [`Briefing::record_refusal`] after each action that was not performed. Whatever else the
 //! model says, text beside the call included, is dropped: a model answer is never evidence.
 //!
 //! The transcript keeps the last [`TRANSCRIPT_LIMIT`] entries, each cut at 16 KiB, numbered from the
@@ -45,6 +46,10 @@ use crate::executor::{Report, arguments_schema};
 pub const SELECT_TOOL: &str = "select_action";
 /// The tool the generator publishes.
 pub const ARGUMENTS_TOOL: &str = "action_arguments";
+
+/// The selector's `Unavailable` message for a selection call that names no action: the model
+/// answered, unusably, rather than failing to answer.
+pub const NO_ACTION: &str = "the model's selection names no action";
 
 /// The most bytes of one transcript entry the model is shown.
 const ENTRY_LIMIT: usize = 16 * 1024;
@@ -89,11 +94,21 @@ impl Briefing {
 
     /// Adds a performed action and its report to the transcript.
     pub fn record(&self, proposal: &ExecutorOutcomeProposedAction, report: &Report) {
-        let mut entry = format!(
+        self.push(format!(
             "{} {}\n{report}",
             proposal.action,
             text_of(&proposal.arguments.0)
-        );
+        ));
+    }
+
+    /// Adds an action that was chosen or proposed and then not performed, with the reason, to the
+    /// transcript: the entry reads `<action>` and then `refused: <reason>`.
+    pub fn record_refusal(&self, action: &str, reason: &str) {
+        self.push(format!("{action}\nrefused: {reason}"));
+    }
+
+    /// Adds one entry, cut at [`ENTRY_LIMIT`] bytes, keeping the last [`TRANSCRIPT_LIMIT`].
+    fn push(&self, mut entry: String) {
         if entry.len() > ENTRY_LIMIT {
             let mut end = ENTRY_LIMIT;
             while !entry.is_char_boundary(end) {
@@ -192,9 +207,7 @@ impl ActionSelector for ModelSelector<'_> {
         let action = answer
             .get("action")
             .and_then(Value::as_str)
-            .ok_or_else(|| {
-                SelectorError::Unavailable("the model's selection names no action".to_owned())
-            })?;
+            .ok_or_else(|| SelectorError::Unavailable(NO_ACTION.to_owned()))?;
         Ok(Choice {
             action: action.to_owned(),
             confidence: None,
