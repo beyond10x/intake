@@ -11,6 +11,10 @@ name = "b10x-intake-model"
 version = "0.0.0"
 
 [[package]]
+name = "b10x-intake-references"
+version = "0.0.0"
+
+[[package]]
 name = "b10x-intake-router"
 version = "0.0.0"
 
