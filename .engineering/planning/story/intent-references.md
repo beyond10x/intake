@@ -2,7 +2,7 @@
 format: aep.planning-md/3
 id: story:intent-references
 kind: story
-status: draft
+status: implemented
 title: Extract an intent's key references so the next node starts with context
 relations:
 - decomposes: epic:intake-slice
@@ -10,12 +10,24 @@ relations:
 - serves: vision:governed-autonomy
 scope:
 - confidence: cited
+  path: Cargo.lock
+- confidence: cited
   path: crates/intake-references/Cargo.toml
 - confidence: cited
   path: crates/intake-references/src/lib.rs
 - confidence: cited
+  path: crates/intake-references/tests/adversary2_references.rs
+- confidence: cited
+  path: crates/intake-references/tests/adversary_references.rs
+- confidence: cited
   path: crates/intake-references/tests/references.rs
-revision: 5
+- confidence: cited
+  path: ess/domains/routing.yaml
+revision: 10
+transitions:
+- {from: "draft", to: "proposed", at: "2026-10-04T14:12:15Z", actor: "human:timo", revision: 6, decided_on: {"recorded":{"review_outcome":4}}}
+- {from: "proposed", to: "active", at: "2026-10-04T14:12:15Z", actor: "human:timo", revision: 7, decided_on: {"recorded":{"review_outcome":4}}}
+- {from: "active", to: "implemented", at: "2026-10-04T14:38:38Z", actor: "human:timo", revision: 10, decided_on: {"recorded":{"test_result":1,"review_outcome":8,"verification":1}}}
 ---
 ## Outcome
 
