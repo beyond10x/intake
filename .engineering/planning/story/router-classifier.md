@@ -2,7 +2,7 @@
 format: aep.planning-md/3
 id: story:router-classifier
 kind: story
-status: active
+status: implemented
 title: Propose the ELS protocol an intent should run under
 relations:
 - decomposes: epic:intake-slice
@@ -18,10 +18,11 @@ scope:
   path: crates/intake-router/src/lib.rs
 - confidence: cited
   path: crates/intake-router/tests/classify.rs
-revision: 6
+revision: 7
 transitions:
 - {from: "draft", to: "proposed", at: "2026-10-04T17:41:04Z", actor: "human:timo", revision: 5, decided_on: {"recorded":{"review_outcome":1}}}
 - {from: "proposed", to: "active", at: "2026-10-04T17:41:04Z", actor: "human:timo", revision: 6, decided_on: {"recorded":{"review_outcome":1}}}
+- {from: "active", to: "implemented", at: "2026-10-04T18:01:54Z", actor: "human:timo", revision: 7, decided_on: {"recorded":{"test_result":1,"review_outcome":3,"verification":1}}}
 ---
 ## Outcome
 
