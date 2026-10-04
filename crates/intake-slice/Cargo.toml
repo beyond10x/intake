@@ -19,3 +19,4 @@ b10x-llm-core = { git = "https://github.com/beyond10x/llm", tag = "0.1.5" }
 b10x-loom = { git = "https://github.com/beyond10x/loom", rev = "346cf43" }
 serde_json = "1"
 sha2 = "0.10"
+tokio = { version = "1.53", features = ["rt"] }

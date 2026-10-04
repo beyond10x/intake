@@ -5,7 +5,9 @@
 //! the configured test command is `grep -qx fixed check.txt` (no shell; `grep` is on every Linux
 //! runner), and `check.txt` holds `broken`. A sibling directory, `outside`, is not part of the
 //! workspace. The fixture's own git calls run with no system or global configuration and give the
-//! repository a local identity, which the executor's commits use.
+//! repository a local identity, which the executor's commits use. The git that the executor and
+//! `case::open` run reads the operator's normal git configuration, as the slice does in use; the
+//! fixture's local settings take precedence over it.
 //!
 //! The model is a recording fake `llm_core::Model`: it answers each request with the next recorded
 //! reply, as a forced call of the one tool the request names (`ToolChoice::Named`). A selection is
@@ -23,7 +25,7 @@ use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Mutex;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use b10x_commission::model::json as cjson;
 use b10x_commission::model::primitives::Uuid;
@@ -40,7 +42,7 @@ use intake_references::{ReferenceKind, references};
 use intake_slice::case;
 use intake_slice::executor::{ExecuteError, LocalExecutor, Report, TestCommand};
 use intake_slice::selector::{Briefing, ModelArguments, ModelSelector};
-use intake_slice::verifier::TestResultVerifier;
+use intake_slice::verifier::{TestResultVerifier, VerifyError};
 use llm_core::{
     BoxFuture, CallId, Cancel, Capabilities, Error, Id, Item, Model, Protocol, Provenance,
     StopReason, StreamSink, ToolCall, ToolChoice, TurnObservation, TurnOutcome, TurnRequest,
@@ -356,6 +358,167 @@ fn a_failing_test_is_edited_and_then_passes() {
     }
     assert_eq!(fixture.head(), fixed);
     assert_eq!(fixture.status(), "");
+}
+
+/// A test command still running at its timeout is killed there, and the run is a `fail` marked as
+/// timed out: `sleep 5` under a 300 ms timeout ends well before five seconds.
+#[test]
+fn a_test_command_past_its_timeout_is_killed_and_fails() {
+    let fixture = Fixture::new();
+    let governor = CanonGovernor::new(MemoryCaseStore::default());
+    let case = case::open(&governor, PICK, INTENT, fixture.workspace()).expect("the case opens");
+    let executor = LocalExecutor::new(
+        &governor,
+        case.clone(),
+        fixture.workspace(),
+        TestCommand::new("sleep", ["5"]).with_timeout(Duration::from_millis(300)),
+    );
+    let verifier = TestResultVerifier::new(&governor, case.clone(), PRODUCER);
+
+    let started = Instant::now();
+    let report = executor
+        .execute(&proposal("tests.run", &json!({})))
+        .expect("tests.run is performed");
+    let elapsed = started.elapsed();
+    assert!(
+        elapsed < Duration::from_secs(4),
+        "the command is killed at its timeout, not run out: {elapsed:?}"
+    );
+    let Report::TestsRun(run) = &report else {
+        panic!("tests.run reports a test run: {report:?}");
+    };
+    assert!(run.timed_out(), "the run is marked as timed out: {run:?}");
+    assert_ne!(run.exit_code(), Some(0));
+    assert!(
+        report.to_string().contains("timed out"),
+        "the report says so: {report}"
+    );
+    verifier
+        .verify(&report)
+        .expect("the verifier submits the result")
+        .expect("a test run is a test result");
+    let held = evidence(&governor, &case);
+    assert_eq!(held.len(), 1, "{held:?}");
+    assert_test_result(&held[0], "fail", &fixture.head());
+}
+
+/// A test command's output reaches the report as its tail only: `seq 1 200000` prints about 1.3 MB.
+#[test]
+fn a_test_commands_output_is_kept_as_its_tail() {
+    let fixture = Fixture::new();
+    let governor = CanonGovernor::new(MemoryCaseStore::default());
+    let case = case::open(&governor, PICK, INTENT, fixture.workspace()).expect("the case opens");
+    let executor = LocalExecutor::new(
+        &governor,
+        case,
+        fixture.workspace(),
+        TestCommand::new("seq", ["1", "200000"]),
+    );
+    let report = executor
+        .execute(&proposal("tests.run", &json!({})))
+        .expect("tests.run is performed");
+    let shown = report.to_string();
+    assert!(shown.contains("199999\n200000"), "the tail is kept");
+    assert!(!shown.contains("\n1\n2\n3\n"), "the head is not");
+    assert!(shown.len() < 20 * 1024, "{} bytes", shown.len());
+}
+
+/// A path the workspace's git ignores is neither read by `repository.inspect` (an ignored secret
+/// never reaches the model) nor written by `repository.edit`, and an edit naming one writes nothing.
+#[test]
+fn an_ignored_path_is_neither_read_nor_written() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.workspace().join(".gitignore"), "*.local\n").expect("write .gitignore");
+    fixture.git(&["add", ".gitignore"]);
+    fixture.git(&["commit", "--quiet", "--message", "ignore local files"]);
+    std::fs::write(fixture.workspace().join("secret.local"), "token\n").expect("write a secret");
+    let head = fixture.head();
+    let governor = CanonGovernor::new(MemoryCaseStore::default());
+    let case = case::open(&governor, PICK, INTENT, fixture.workspace()).expect("the case opens");
+    let executor = LocalExecutor::new(
+        &governor,
+        case,
+        fixture.workspace(),
+        TestCommand::new("grep", ["-qx", "fixed", "check.txt"]),
+    );
+
+    let inspected = executor.execute(&proposal(
+        "repository.inspect",
+        &json!({"paths": ["check.txt", "secret.local"]}),
+    ));
+    assert!(
+        matches!(inspected, Err(ExecuteError::Ignored { ref path }) if path == "secret.local"),
+        "an ignored file is not read: {inspected:?}"
+    );
+    let edited = executor.execute(&proposal(
+        "repository.edit",
+        &json!({
+            "files": [
+                {"path": "check.txt", "contents": "fixed\n"},
+                {"path": "new.local", "contents": "fixed\n"}
+            ],
+            "message": "write an ignored file"
+        }),
+    ));
+    assert!(
+        matches!(edited, Err(ExecuteError::Ignored { ref path }) if path == "new.local"),
+        "an ignored file is not written: {edited:?}"
+    );
+    assert!(!fixture.workspace().join("new.local").exists());
+    assert_eq!(fixture.read("check.txt"), "broken\n");
+    assert_eq!(fixture.head(), head);
+    let inspected = executor
+        .execute(&proposal(
+            "repository.inspect",
+            &json!({"paths": ["check.txt", ".gitignore"]}),
+        ))
+        .expect("files that are not ignored are read");
+    assert!(matches!(inspected, Report::Inspected(ref files) if files.len() == 2));
+}
+
+/// One test run yields one evidence record: verifying it again, through the same verifier or
+/// another for the same case, is refused and submits nothing. A new run is verified.
+#[test]
+fn a_test_run_is_verified_once() {
+    let fixture = Fixture::new();
+    let governor = CanonGovernor::new(MemoryCaseStore::default());
+    let case = case::open(&governor, PICK, INTENT, fixture.workspace()).expect("the case opens");
+    let executor = LocalExecutor::new(
+        &governor,
+        case.clone(),
+        fixture.workspace(),
+        TestCommand::new("grep", ["-qx", "fixed", "check.txt"]),
+    );
+    let verifier = TestResultVerifier::new(&governor, case.clone(), PRODUCER);
+    let run = || {
+        executor
+            .execute(&proposal("tests.run", &json!({})))
+            .expect("tests.run is performed")
+    };
+
+    let report = run();
+    verifier
+        .verify(&report)
+        .expect("the first verification submits")
+        .expect("a test run is a test result");
+    let again = verifier.verify(&report);
+    assert!(
+        matches!(again, Err(VerifyError::AlreadyVerified { .. })),
+        "a second verification of one run is refused: {again:?}"
+    );
+    let other = TestResultVerifier::new(&governor, case.clone(), PRODUCER).verify(&report);
+    assert!(
+        matches!(other, Err(VerifyError::AlreadyVerified { .. })),
+        "another verifier of the case refuses it too: {other:?}"
+    );
+    assert_eq!(evidence(&governor, &case).len(), 1, "one run, one record");
+
+    let next = run();
+    verifier
+        .verify(&next)
+        .expect("a new run is verified")
+        .expect("a test run is a test result");
+    assert_eq!(evidence(&governor, &case).len(), 2);
 }
 
 /// `record` is a `test_result` about `implementation` at `head`, with `result`, from the trusted
