@@ -17,6 +17,7 @@ llm-http = { package = "b10x-llm-http", git = "https://github.com/beyond10x/llm"
 llm-providers = { package = "b10x-llm-providers", git = "https://github.com/beyond10x/llm", tag = "0.1.5" }
 llm-responses = { package = "b10x-llm-responses", git = "https://github.com/beyond10x/llm", tag = "0.1.5" }
 serde_json = "1"
+tokio = { version = "1.53", features = ["rt"] }
 
 [dev-dependencies]
 tokio = { version = "1.53", features = ["rt", "macros", "time", "net", "io-util"] }
