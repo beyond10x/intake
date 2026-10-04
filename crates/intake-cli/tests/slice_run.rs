@@ -227,6 +227,147 @@ fn the_slice_stops_for_each_reason() {
     assert_eq!(fixture.head(), first);
 }
 
+/// The live run's question: after the passing test run the frontier lists the merge as needing
+/// approval, and a model that keeps choosing what it may do (here a second test run at the same
+/// revision) changes nothing. A step that leaves such a frontier unchanged stops the run for
+/// approval, after that step is printed, instead of spinning to the step budget.
+#[test]
+fn the_run_stops_at_the_approval_gate_when_the_model_idles() {
+    let fixture = Fixture::new("idle-at-gate");
+    let first = fixture.head();
+    let (run, output, _) = drive(
+        &fixture,
+        Row {
+            name: "a model idling at the approval gate",
+            pick: pick(SOFTWARE_CHANGE, 0.9),
+            agent: vec![
+                json!({"action": "repository.inspect"}),
+                json!({"paths": ["check.txt"]}),
+                json!({"action": "repository.edit"}),
+                json!({
+                    "files": [{"path": "check.txt", "contents": "fixed\n"}],
+                    "message": "fix the check"
+                }),
+                json!({"action": "tests.run"}),
+                json!({}),
+                json!({"action": "tests.run"}),
+                json!({}),
+            ],
+            max_steps: 10,
+            nothing_admissible: false,
+        },
+    );
+    assert_picked(&output, SOFTWARE_CHANGE);
+    assert_eq!(
+        steps(&output),
+        [
+            "repository.inspect",
+            "repository.edit",
+            "tests.run",
+            "tests.run"
+        ],
+        "{output}"
+    );
+    assert_eq!(
+        count_lines(&output, "evidence: test_result pass"),
+        2,
+        "both test runs pass: {output}"
+    );
+    assert_stopped(&output, "stopped: ApprovalRequired (repository.merge)");
+    assert_eq!(run.stop_reason, StopReason::ApprovalRequired);
+    assert_eq!(run.steps, 4);
+    assert_ne!(fixture.head(), first, "the edit was committed");
+    assert_eq!(
+        fixture.git(&["branch", "--list"]).trim(),
+        "* main",
+        "nothing was merged or branched"
+    );
+}
+
+/// A step at the approval gate that changes the frontier does not stop the run: an edit after the
+/// passing run makes that run's evidence stale, the merge is no longer the action needing approval,
+/// and the run goes on until a step leaves the gate as it found it.
+#[test]
+fn a_step_that_moves_the_frontier_at_the_gate_goes_on() {
+    let fixture = Fixture::new("moved-at-gate");
+    let (run, output, _) = drive(
+        &fixture,
+        Row {
+            name: "an edit at the approval gate",
+            pick: pick(SOFTWARE_CHANGE, 0.9),
+            agent: vec![
+                json!({"action": "repository.edit"}),
+                json!({
+                    "files": [{"path": "check.txt", "contents": "fixed\n"}],
+                    "message": "fix the check"
+                }),
+                json!({"action": "tests.run"}),
+                json!({}),
+                json!({"action": "repository.edit"}),
+                json!({
+                    "files": [{"path": "notes.txt", "contents": "a note\n"}],
+                    "message": "add a note"
+                }),
+                json!({"action": "tests.run"}),
+                json!({}),
+                json!({"action": "tests.run"}),
+                json!({}),
+            ],
+            max_steps: 10,
+            nothing_admissible: false,
+        },
+    );
+    assert_eq!(
+        steps(&output),
+        [
+            "repository.edit",
+            "tests.run",
+            "repository.edit",
+            "tests.run",
+            "tests.run"
+        ],
+        "{output}"
+    );
+    assert_stopped(&output, "stopped: ApprovalRequired (repository.merge)");
+    assert_eq!(run.stop_reason, StopReason::ApprovalRequired);
+    assert_eq!(run.steps, 5);
+}
+
+/// A selection refused at the approval gate is a step that changes nothing, so it stops the run for
+/// approval like a performed one.
+#[test]
+fn a_refused_selection_at_the_gate_stops_for_approval() {
+    let fixture = Fixture::new("refused-at-gate");
+    let (run, output, _) = drive(
+        &fixture,
+        Row {
+            name: "an unlisted selection at the approval gate",
+            pick: pick(SOFTWARE_CHANGE, 0.9),
+            agent: vec![
+                json!({"action": "repository.edit"}),
+                json!({
+                    "files": [{"path": "check.txt", "contents": "fixed\n"}],
+                    "message": "fix the check"
+                }),
+                json!({"action": "tests.run"}),
+                json!({}),
+                json!({"action": "repository.publish"}),
+            ],
+            max_steps: 10,
+            nothing_admissible: false,
+        },
+    );
+    assert_eq!(
+        steps(&output),
+        ["repository.edit", "tests.run", "repository.publish"],
+        "{output}"
+    );
+    assert_eq!(count_starting(&output, "effect: refused:"), 1, "{output}");
+    assert_stopped(&output, "stopped: ApprovalRequired (repository.merge)");
+    assert_eq!(run.stop_reason, StopReason::ApprovalRequired);
+    assert_eq!(run.steps, 3);
+}
+
 /// `b10x-intake run --help` lists every flag the story names, the intent, and the default model.
 #[test]
 fn the_run_command_lists_its_flags() {

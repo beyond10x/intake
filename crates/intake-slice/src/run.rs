@@ -15,7 +15,7 @@
 //!
 //! | Stop reason | When |
 //! | --- | --- |
-//! | [`StopReason::ApprovalRequired`] | Loom proposes an action the frontier lists as needing approval |
+//! | [`StopReason::ApprovalRequired`] | Loom proposes an action the frontier lists as needing approval, or a step leaves a frontier that lists one unchanged (every action's status and reasons); the detail names those actions in frontier order |
 //! | [`StopReason::NothingAdmissible`] | Loom proposes nothing and the frontier lists no admissible action |
 //! | [`StopReason::StepBudget`] | the steps taken reach the request's `max_steps` |
 //! | [`StopReason::NoLocalExecutor`] | the pick is not `software-change@1`; the case opens and one frontier is read |
@@ -46,7 +46,8 @@
 //!
 //! One line per reference (`reference: <kind> <value>`), the pick (`picked <protocol> (confidence
 //! <c>)`, then one indented `reason:` line each) or the refusal (`refused: <why>`), the frontier
-//! before each Loom run (`frontier: <action> (<status>), ...`), each step (`step <n>: <action>
+//! before each Loom run and the one a step left unchanged at an approval gate (`frontier: <action>
+//! (<status>), ...`), each step (`step <n>: <action>
 //! <arguments>`, then indented `effect:` and `evidence:` lines; further lines of an effect are
 //! indented and start with `|`), and last `stopped: <reason>`, with its detail in parentheses where
 //! it has one.
@@ -272,17 +273,52 @@ pub fn run<S: CaseStore>(
     let commission = commission(&case);
 
     let mut steps = 0;
+    // The frontier read after the last step, when it was read to compare with the one before.
+    let mut next = None;
     loop {
         if steps >= request.max_steps {
             return stop(out, pick.protocol, steps, StopReason::StepBudget, None);
         }
-        let frontier = frontiers.frontier(&case)?;
+        let frontier = match next.take() {
+            Some(frontier) => frontier,
+            None => frontiers.frontier(&case)?,
+        };
         print_frontier(out, &frontier)?;
         *lock(&chosen) = None;
         let outcome = loom.run(&commission, &frontier);
         let chose = lock(&chosen).take();
-        let proposal = match outcome {
-            ExecutorOutcome::ProposedAction(proposal) => proposal,
+        match outcome {
+            ExecutorOutcome::ProposedAction(proposal) => {
+                let needs_approval = frontier.data().actions.iter().any(|listed| {
+                    listed.action == proposal.action
+                        && listed.status == ActionStatus::ApprovalRequired
+                });
+                if needs_approval {
+                    let action = proposal.action;
+                    return stop(
+                        out,
+                        pick.protocol,
+                        steps,
+                        StopReason::ApprovalRequired,
+                        Some(action),
+                    );
+                }
+
+                steps += 1;
+                writeln!(
+                    out,
+                    "step {steps}: {} {}",
+                    printable(&proposal.action),
+                    printable(&json_text(&proposal.arguments.0))
+                )?;
+                perform(
+                    out, &executor, &verifier, governor, &case, &briefing, &proposal,
+                )?;
+
+                if let CompletionDetermination::Complete(complete) = frontiers.completion(&case)? {
+                    return Err(SliceError::Complete(complete.outcome));
+                }
+            }
             ExecutorOutcome::NoUsefulAction(_) => {
                 let admissible = frontier
                     .data()
@@ -300,47 +336,58 @@ pub fn run<S: CaseStore>(
                 }
                 steps += 1;
                 refuse_selection(out, &briefing, &frontier, chose, steps)?;
-                continue;
             }
             ExecutorOutcome::Suspended(_) if matches!(chose, Some(Chosen::NoAction)) => {
                 steps += 1;
                 refuse_selection(out, &briefing, &frontier, chose, steps)?;
-                continue;
             }
             ExecutorOutcome::Suspended(suspended) => {
                 return Err(SliceError::Suspended(format!("{:?}", suspended.reason)));
             }
             other => return Err(SliceError::Unexpected(format!("{other:?}"))),
-        };
-        let needs_approval = frontier.data().actions.iter().any(|listed| {
-            listed.action == proposal.action && listed.status == ActionStatus::ApprovalRequired
-        });
-        if needs_approval {
-            let action = proposal.action;
-            return stop(
-                out,
-                pick.protocol,
-                steps,
-                StopReason::ApprovalRequired,
-                Some(action),
-            );
         }
 
-        steps += 1;
-        writeln!(
-            out,
-            "step {steps}: {} {}",
-            printable(&proposal.action),
-            printable(&json_text(&proposal.arguments.0))
-        )?;
-        perform(
-            out, &executor, &verifier, governor, &case, &briefing, &proposal,
-        )?;
-
-        if let CompletionDetermination::Complete(complete) = frontiers.completion(&case)? {
-            return Err(SliceError::Complete(complete.outcome));
+        // A step, performed or refused, that leaves a frontier with an action needing approval
+        // exactly as it was: the only useful action left needs authority.
+        let gated = approval_required(&frontier);
+        if !gated.is_empty() {
+            let after = frontiers.frontier(&case)?;
+            if unchanged(&frontier, &after) {
+                print_frontier(out, &after)?;
+                return stop(
+                    out,
+                    pick.protocol,
+                    steps,
+                    StopReason::ApprovalRequired,
+                    Some(gated.join(", ")),
+                );
+            }
+            next = Some(after);
         }
     }
+}
+
+/// The actions `frontier` lists as needing approval, in its order.
+fn approval_required(frontier: &Frontier<frontier_state::Issued>) -> Vec<String> {
+    frontier
+        .data()
+        .actions
+        .iter()
+        .filter(|listed| listed.status == ActionStatus::ApprovalRequired)
+        .map(|listed| listed.action.clone())
+        .collect()
+}
+
+/// Whether `after` lists the same actions as `before`, each with the same status and reasons.
+fn unchanged(
+    before: &Frontier<frontier_state::Issued>,
+    after: &Frontier<frontier_state::Issued>,
+) -> bool {
+    let (before, after) = (&before.data().actions, &after.data().actions);
+    before.len() == after.len()
+        && before.iter().zip(after).all(|(was, is)| {
+            was.action == is.action && was.status == is.status && was.reasons == is.reasons
+        })
 }
 
 /// The router's pick, or a refusal as the protocol it refused, the stop detail and the reason.
