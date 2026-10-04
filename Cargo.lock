@@ -198,8 +198,8 @@ dependencies = [
 
 [[package]]
 name = "b10x-llm-core"
-version = "0.1.5"
-source = "git+https://github.com/beyond10x/llm?tag=0.1.5#acfc3e02d4ebec15e6214d75f340c71faed17954"
+version = "0.1.6"
+source = "git+https://github.com/beyond10x/llm?tag=0.1.6#10a083c3de762538c0139e62d42002fcde6fc2ab"
 dependencies = [
  "serde",
  "serde_json",
@@ -209,8 +209,8 @@ dependencies = [
 
 [[package]]
 name = "b10x-llm-credentials"
-version = "0.1.5"
-source = "git+https://github.com/beyond10x/llm?tag=0.1.5#acfc3e02d4ebec15e6214d75f340c71faed17954"
+version = "0.1.6"
+source = "git+https://github.com/beyond10x/llm?tag=0.1.6#10a083c3de762538c0139e62d42002fcde6fc2ab"
 dependencies = [
  "b10x-llm-core",
  "base64 0.22.1",
@@ -225,8 +225,8 @@ dependencies = [
 
 [[package]]
 name = "b10x-llm-http"
-version = "0.1.5"
-source = "git+https://github.com/beyond10x/llm?tag=0.1.5#acfc3e02d4ebec15e6214d75f340c71faed17954"
+version = "0.1.6"
+source = "git+https://github.com/beyond10x/llm?tag=0.1.6#10a083c3de762538c0139e62d42002fcde6fc2ab"
 dependencies = [
  "b10x-llm-core",
  "httpdate",
@@ -237,8 +237,8 @@ dependencies = [
 
 [[package]]
 name = "b10x-llm-providers"
-version = "0.1.5"
-source = "git+https://github.com/beyond10x/llm?tag=0.1.5#acfc3e02d4ebec15e6214d75f340c71faed17954"
+version = "0.1.6"
+source = "git+https://github.com/beyond10x/llm?tag=0.1.6#10a083c3de762538c0139e62d42002fcde6fc2ab"
 dependencies = [
  "b10x-llm-core",
  "b10x-llm-credentials",
@@ -253,8 +253,8 @@ dependencies = [
 
 [[package]]
 name = "b10x-llm-responses"
-version = "0.1.5"
-source = "git+https://github.com/beyond10x/llm?tag=0.1.5#acfc3e02d4ebec15e6214d75f340c71faed17954"
+version = "0.1.6"
+source = "git+https://github.com/beyond10x/llm?tag=0.1.6#10a083c3de762538c0139e62d42002fcde6fc2ab"
 dependencies = [
  "b10x-llm-core",
  "b10x-llm-credentials",
