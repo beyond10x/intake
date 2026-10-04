@@ -11,7 +11,11 @@ publish = false
 name = "intake_slice"
 
 [dependencies]
-b10x-commission = { git = "https://github.com/beyond10x/commission", rev = "e61e4f0" }
+b10x-commission = { git = "https://github.com/beyond10x/commission", branch = "main" }
 b10x-els = { git = "https://github.com/beyond10x/els", rev = "ac7dd03" }
-b10x-governor = { git = "https://github.com/beyond10x/governor", rev = "3d028b8" }
+b10x-governor = { git = "https://github.com/beyond10x/governor", rev = "81fcc1e" }
+b10x-intake-references = { path = "../intake-references" }
+b10x-llm-core = { git = "https://github.com/beyond10x/llm", tag = "0.1.5" }
+b10x-loom = { git = "https://github.com/beyond10x/loom", rev = "346cf43" }
+serde_json = "1"
 sha2 = "0.10"
