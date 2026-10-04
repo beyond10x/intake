@@ -4,6 +4,12 @@ What Intake is and how to run it is in [README.md](README.md); this file is what
 must know. The cross-repository architecture is Atlas ADRs 0066–0075 and Atlas
 `epic:ga-intent-router`.
 
+## Moving into Loom
+
+Atlas ADR 0090 (2026-10-05): this repository becomes crates of `beyond10x/loom`
+(loom `epic:runtime-consolidation`, stories `import-intake`, `runtime-merge`, `loom-cli`). Start no
+new work here; file it in Loom. Fixes needed before the import lands go here and are carried over.
+
 ## Serves
 
 - **O2 — decisions as data, with evidence.** Which protocol a piece of work runs under is a recorded
