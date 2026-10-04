@@ -4,8 +4,10 @@
 //! revision, the workspace's git `HEAD` as the `implementation` revision and `r0` for every other
 //! artifact the protocol declares. The governor, not the slice, issues the frontier.
 //!
-//! The fixture workspace is a git repository created under `CARGO_TARGET_TMPDIR`. Git runs with no
-//! system or global configuration, so the test reads nothing from the operator's home directory.
+//! The fixture workspace is a git repository created under `CARGO_TARGET_TMPDIR`. The test's own
+//! git calls, which build the fixture, run with no system or global configuration. The git that
+//! `case::open` and `case::report_head` run reads the operator's normal git configuration, as the
+//! slice does in use.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

@@ -1,3 +1,11 @@
-//! The vertical slice: open a case on the picked protocol, evaluate it with Canon, run Loom over it and execute local actions until blocked (stories S3-S5). Temporary: Commission's local runtime loop and the governor replace it.
+#![forbid(unsafe_code)]
+
+//! The vertical slice: open a case on the picked protocol through the governor, run Loom over it
+//! and execute local actions until blocked (stories S3-S5). Temporary: Commission's local runtime
+//! loop replaces it.
 //!
-//! Not built yet: the story named above fills this crate.
+//! [`case`] opens the slice's case through `beyond10x/governor` and reports the workspace's new
+//! `HEAD` to it; the slice never evaluates Canon itself. The loop and the local executor are not
+//! built yet.
+
+pub mod case;
