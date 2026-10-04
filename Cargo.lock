@@ -136,6 +136,13 @@ dependencies = [
 [[package]]
 name = "b10x-intake-router"
 version = "0.0.0"
+dependencies = [
+ "b10x-els",
+ "b10x-intake-model",
+ "b10x-llm-core",
+ "serde_json",
+ "tokio",
+]
 
 [[package]]
 name = "b10x-intake-slice"
