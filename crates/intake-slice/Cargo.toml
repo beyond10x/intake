@@ -1,0 +1,11 @@
+[package]
+name = "b10x-intake-slice"
+description = "The vertical slice: open a case on the picked protocol, evaluate it with Canon, run Loom over it and execute local actions until blocked (stories S3-S5). Temporary: Commission's local runtime loop and the governor replace it."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+name = "intake_slice"

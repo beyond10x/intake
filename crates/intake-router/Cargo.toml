@@ -1,0 +1,11 @@
+[package]
+name = "b10x-intake-router"
+description = "Classify an intent into the best-matching protocol of the ELS registry (story S1)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+name = "intake_router"
