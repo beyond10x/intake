@@ -42,3 +42,26 @@ fn lower_case_keys_and_email_addresses_yield_nothing() {
     assert_eq!(found("fix dev-630 please"), Vec::new());
     assert_eq!(found("write to ops.team@example.org about it"), Vec::new());
 }
+
+#[test]
+fn github_issue_urls_are_extracted() {
+    assert_eq!(
+        found("see https://github.com/beyond10x/intake/issues/5."),
+        vec![(ReferenceKind::GithubIssue, "beyond10x/intake#5".to_owned())]
+    );
+}
+
+#[test]
+fn a_project_part_needs_two_letters_before_any_digit() {
+    assert_eq!(found("use X-1 or A1-5 bolts"), Vec::new());
+}
+
+#[test]
+fn a_longer_dashed_identifier_is_not_cut_into_a_key() {
+    assert_eq!(found("ticket REQ-2024-1234 is closed"), Vec::new());
+}
+
+#[test]
+fn key_shaped_email_local_parts_yield_nothing() {
+    assert_eq!(found("write to DEV-630@example.org"), Vec::new());
+}

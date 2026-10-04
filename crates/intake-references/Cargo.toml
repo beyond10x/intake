@@ -9,3 +9,6 @@ publish = false
 
 [lib]
 name = "intake_references"
+
+[dependencies]
+regex = { version = "1", default-features = false, features = ["std", "unicode-gencat", "unicode-perl"] }
