@@ -7,9 +7,8 @@ types:
 
   - name: intake.routing.ReferenceKind
     kind: enum
-    # What a first-level extractor recognises in an intent. UNMAPPED: whether a Slack thread, a
-    # GitLab pipeline or a GitHub pull request is a kind of its own is open until story
-    # intent-references names the first set it ships.
+    # What a first-level extractor recognises in an intent. Story intent-references ships these
+    # kinds.
     variants: [JiraIssue, SlackMessage, GitlabIssue, GitlabMergeRequest, GithubIssue, GithubPullRequest, Url]
 
   - name: intake.routing.StopReason
