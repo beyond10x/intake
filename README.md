@@ -27,8 +27,7 @@ given; it never merges or deploys.
 task check
 ```
 
-Requires Rust 1.98 or newer and [go-task](https://taskfile.dev). Model calls need
-`ANTHROPIC_API_KEY`; the tests make none.
+Requires Rust 1.98 or newer and [go-task](https://taskfile.dev). Model calls use your Codex subscription (`codex login`); the tests make none.
 
 ## Licence
 

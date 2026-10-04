@@ -20,12 +20,17 @@ must know. The cross-repository architecture is Atlas ADRs 0066–0075 and Atlas
   them. Keep it small; do not grow it into a runtime.
 - The slice executes `software.change/1` actions inside the given workspace only. It never merges,
   pushes or deploys, and never supplies authority on the operator's behalf.
+- Evidence comes from a trusted verifier (the slice runs the test command itself), never from what a
+  model says happened (Atlas ADR 0074). The case is governed by `beyond10x/governor` (Canon behind
+  Commission's `Governor` and `EvidencePort`); Intake never evaluates Canon itself.
 
 ## Rules
 
 - Anything that runs is Rust; command lines use clap derive.
 - Model calls go through the `llm` crates (`b10x-llm-*` at a pinned tag), never a hand-written HTTP
-  client. Keys come from the environment; nothing reads vendor credential files.
+  client. The credential is the operator's Codex subscription (`~/.codex/auth.json`, refreshed
+  through `auth.openai.com`), read and renewed by llm's credential, never by Intake code; tests
+  read no credential file.
 - A model's choice is checked against the list it was given; a pick outside it is refused.
 - Tests make no model or network call: they use recorded responses and local fixtures.
 - No `/home/<name>/` path literals anywhere: common Gates personal-paths has no allowance.
