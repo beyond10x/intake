@@ -2,7 +2,7 @@
 format: aep.planning-md/3
 id: story:case-frontier
 kind: story
-status: draft
+status: implemented
 title: Open the slice's case through the governor
 refs:
 - provider: governor
@@ -20,7 +20,11 @@ scope:
   path: crates/intake-slice/src/lib.rs
 - confidence: cited
   path: crates/intake-slice/tests/slice_case.rs
-revision: 11
+revision: 14
+transitions:
+- {from: "draft", to: "proposed", at: "2026-10-04T15:17:43Z", actor: "human:timo", revision: 12, decided_on: {"recorded":{"review_outcome":3}}}
+- {from: "proposed", to: "active", at: "2026-10-04T15:17:43Z", actor: "human:timo", revision: 13, decided_on: {"recorded":{"review_outcome":3}}}
+- {from: "active", to: "implemented", at: "2026-10-04T17:19:10Z", actor: "human:timo", revision: 14, decided_on: {"recorded":{"test_result":1,"review_outcome":5,"verification":1}}}
 ---
 ## Outcome
 
