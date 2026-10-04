@@ -20,6 +20,9 @@ must know. The cross-repository architecture is Atlas ADRs 0066–0075 and Atlas
   them. Keep it small; do not grow it into a runtime.
 - The slice executes `software.change/1` actions inside the given workspace only. It never merges,
   pushes or deploys, and never supplies authority on the operator's behalf.
+- There is no sandbox. `tests.run` and the workspace's git hooks run model-edited code with the
+  operator's rights and environment; the path checks bound what the executor writes, not what that
+  code does. Run the slice only on a workspace whose test command you would run yourself.
 - Evidence comes from a trusted verifier (the slice runs the test command itself), never from what a
   model says happened (Atlas ADR 0074). The case is governed by `beyond10x/governor` (Canon behind
   Commission's `Governor` and `EvidencePort`); Intake never evaluates Canon itself.
