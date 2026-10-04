@@ -2,7 +2,7 @@
 format: aep.planning-md/3
 id: story:selector-executor
 kind: story
-status: draft
+status: active
 title: Choose actions with a model through Loom and perform them locally in the workspace
 relations:
 - decomposes: epic:intake-slice
@@ -24,7 +24,10 @@ scope:
   path: crates/intake-slice/src/verifier.rs
 - confidence: cited
   path: crates/intake-slice/tests/selector_executor.rs
-revision: 5
+revision: 7
+transitions:
+- {from: "draft", to: "proposed", at: "2026-10-04T17:22:51Z", actor: "human:timo", revision: 6, decided_on: {"recorded":{"review_outcome":2}}}
+- {from: "proposed", to: "active", at: "2026-10-04T17:22:51Z", actor: "human:timo", revision: 7, decided_on: {"recorded":{"review_outcome":2}}}
 ---
 ## Outcome
 

@@ -2,7 +2,7 @@
 format: aep.planning-md/3
 id: story:model-access
 kind: story
-status: active
+status: implemented
 title: Make one forced tool call through the llm crates over the Codex subscription
 relations:
 - decomposes: epic:intake-slice
@@ -15,10 +15,11 @@ scope:
   path: crates/intake-model/src/lib.rs
 - confidence: cited
   path: crates/intake-model/tests/forced_tool_call.rs
-revision: 9
+revision: 10
 transitions:
 - {from: "draft", to: "proposed", at: "2026-10-04T15:17:43Z", actor: "human:timo", revision: 8, decided_on: {"recorded":{"review_outcome":2}}}
 - {from: "proposed", to: "active", at: "2026-10-04T15:17:43Z", actor: "human:timo", revision: 9, decided_on: {"recorded":{"review_outcome":2}}}
+- {from: "active", to: "implemented", at: "2026-10-04T17:42:18Z", actor: "human:timo", revision: 10, decided_on: {"recorded":{"test_result":1,"review_outcome":4,"verification":1}}}
 ---
 
 ## Outcome
