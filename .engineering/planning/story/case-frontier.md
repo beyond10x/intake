@@ -20,7 +20,7 @@ scope:
   path: crates/intake-slice/src/lib.rs
 - confidence: cited
   path: crates/intake-slice/tests/slice_case.rs
-revision: 10
+revision: 11
 ---
 ## Outcome
 
@@ -51,4 +51,7 @@ exist.
 
 ## Depends on
 
-beyond10x/governor story `canon-governor`, released at a tag that Intake pins.
+beyond10x/governor story `canon-governor` (implemented in wave 2026-10-04-w16), pinned at the exact
+revision `3d028b8`. The governor has no release process yet; a tag replaces the revision when it
+does. Canon comes through the governor and ELS by the same reference (`branch = "main"`, pinned by
+`Cargo.lock`), so one Canon builds.
