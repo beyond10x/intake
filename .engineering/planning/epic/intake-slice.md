@@ -2,12 +2,16 @@
 format: aep.planning-md/3
 id: epic:intake-slice
 kind: epic
-status: draft
+status: implemented
 title: 'Vertical slice: from an intent to a governed case run until blocked'
 relations:
 - serves: vision:O2
 - serves: vision:governed-autonomy
-revision: 3
+revision: 6
+transitions:
+- {from: "draft", to: "proposed", at: "2026-10-04T18:39:20Z", actor: "human:timo", revision: 4, decided_on: {"recorded":{"review_outcome":3,"verification":1}}}
+- {from: "proposed", to: "active", at: "2026-10-04T18:39:20Z", actor: "human:timo", revision: 5, decided_on: {"recorded":{"review_outcome":3,"verification":1}}}
+- {from: "active", to: "implemented", at: "2026-10-04T18:39:20Z", actor: "human:timo", revision: 6, decided_on: {"recorded":{"review_outcome":3,"verification":1}}}
 ---
 ## Outcome
 

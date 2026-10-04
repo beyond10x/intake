@@ -2,7 +2,7 @@
 format: aep.planning-md/3
 id: story:slice-loop-cli
 kind: story
-status: draft
+status: implemented
 title: Run the slice from the command line until it is blocked
 relations:
 - decomposes: epic:intake-slice
@@ -20,10 +20,18 @@ scope:
 - confidence: cited
   path: crates/intake-cli/tests/slice_run.rs
 - confidence: cited
+  path: crates/intake-slice/Cargo.toml
+- confidence: cited
   path: crates/intake-slice/src/lib.rs
 - confidence: cited
   path: crates/intake-slice/src/run.rs
-revision: 5
+- confidence: cited
+  path: crates/intake-slice/src/selector.rs
+revision: 10
+transitions:
+- {from: "draft", to: "proposed", at: "2026-10-04T18:02:51Z", actor: "human:timo", revision: 6, decided_on: {"recorded":{"review_outcome":1}}}
+- {from: "proposed", to: "active", at: "2026-10-04T18:02:51Z", actor: "human:timo", revision: 7, decided_on: {"recorded":{"review_outcome":1}}}
+- {from: "active", to: "implemented", at: "2026-10-04T18:39:15Z", actor: "human:timo", revision: 10, decided_on: {"recorded":{"test_result":1,"review_outcome":2,"verification":2}}}
 ---
 ## Outcome
 
