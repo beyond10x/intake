@@ -1,8 +1,8 @@
 # Intake
 
-> **Moving into [Loom](https://github.com/beyond10x/loom).** Atlas ADR 0090 (2026-10-05) makes Loom
-> the one runtime repository; this code becomes Loom crates (loom `epic:runtime-consolidation`) and
-> this repository is archived afterwards. `b10x-loom run` replaces `b10x-intake run`.
+> **Archived. This code lives in [Loom](https://github.com/beyond10x/loom)** (crates `loom-intake-router`, `loom-intake-slice`, `loom-intake-references` and `loom-cli`; `b10x-loom run` replaces `b10x-intake run`), per
+> Atlas ADR 0090 (2026-10-05): Loom is the one runtime repository. Open issues and changes
+> there. This repository is read-only and kept for its history.
 
 From an intent to a governed case. Intake reads what someone wants done — a prompt, a request, a
 question — and proposes the protocol it should run under, picked from the protocols ELS ships. Its
